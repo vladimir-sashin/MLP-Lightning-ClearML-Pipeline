@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "Topological XAI research"
+version = "0.1.0"
+description = "Topological XAI methods research"
+authors = ["Vladimir Sashin <sashin.v.a@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.4.0"
+vulture = "^2.9.1"
+pytest = "^7.4.2"
+
+[tool.poetry.group.notebooks]
+optional = true
+
+[tool.poetry.group.notebooks.dependencies]
+jupyterlab = "3.6.3"
+jupyterlab-lsp = "4.0.1"
+python-lsp-server = {version = "1.7.2", extras = ["python"]}
+matplotlib = "^3.7.1"
+ipywidgets = "^8.0.6"
+ipyplot = "^1.0"
+
+[tool.vulture]
+min_confidence = 80
+paths = ["src"]
+ignore_names = ["args", "kwargs"]
+sort_by_size = true
+verbose = false
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

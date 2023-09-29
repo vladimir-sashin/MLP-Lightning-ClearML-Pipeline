@@ -1,0 +1,61 @@
+default_language_version:
+  python: python3.8
+repos:
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.1.0
+    hooks:
+      - id: flake8
+  - repo: https://github.com/jendrikseipp/vulture
+    rev: v2.7
+    hooks:
+      - id: vulture
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-added-large-files
+        args: ['--maxkb=4096']
+      - id: check-toml
+      - id: check-yaml
+        args:
+          - '--unsafe'
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: double-quote-string-fixer
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        args: ["--profile=black", "--line-length=120"]
+  - repo: https://github.com/psf/black
+    rev: 23.1.0
+    hooks:
+      - id: black
+        args: ["--skip-string-normalization", "--line-length=120"]
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.5.1
+    hooks:
+      - id: mypy
+        args: ["--ignore-missing-imports", "--follow-imports=skip", "--strict"]
+  - repo: https://github.com/asottile/add-trailing-comma
+    rev: v2.5.1
+    hooks:
+      - id: add-trailing-comma
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.16
+    hooks:
+      - id: mdformat
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.7.0
+    hooks:
+      - id: nbqa-flake8
+        additional_dependencies: [ flake8==6.1.0 ]
+        args: ["--max-line-length=120"]
+      - id: nbqa-mypy
+        additional_dependencies: [ mypy==1.5.1 ]
+        args: ["--ignore-missing-imports", "--follow-imports=skip"]
+      - id: nbqa-black
+        additional_dependencies: [ black==23.1.0 ]
+        args: ["--skip-string-normalization", "--line-length=120"]
+      - id: nbqa-isort
+        additional_dependencies: [ isort==5.12.0 ]
+        args: ["--profile=black", "--line-length=120"]
