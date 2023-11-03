@@ -36,6 +36,7 @@ repos:
     hooks:
       - id: mypy
         args: ["--ignore-missing-imports", "--follow-imports=skip", "--strict"]
+        exclude: tasks.py
   - repo: https://github.com/asottile/add-trailing-comma
     rev: v2.5.1
     hooks:
