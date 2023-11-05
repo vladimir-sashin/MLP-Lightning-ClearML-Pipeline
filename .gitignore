@@ -12,3 +12,4 @@ __pycache__
 .gdrive_dataset
 lightning_logs
 *.pth
+.datasets

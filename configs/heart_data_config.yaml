@@ -1,0 +1,5 @@
+dataset_name: heart_disease_dataset
+input_path: .datasets/heart_disease/initial/heart.csv
+output_dir: .datasets/heart_disease/processed
+seed: 42
+test_ratio: 0.2
