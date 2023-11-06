@@ -23,7 +23,7 @@ class HeartSubset:
             raise ValueError(f'`subset_type` must be either `train` or `test`, got `{self.subset_type}`')
 
     def to_csv(self, export_dir: Union[str, Path]) -> None:
-        export_dir = PROJECT_ROOT / Path(export_dir) / self.subset_type
+        export_dir: Path = PROJECT_ROOT / Path(export_dir) / self.subset_type
         export_dir.mkdir(parents=True, exist_ok=True)
         self.features.to_csv(export_dir / 'features.csv', index=False)
         self.target.to_csv(export_dir / 'target.csv', index=False)
