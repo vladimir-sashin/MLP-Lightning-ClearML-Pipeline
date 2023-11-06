@@ -46,7 +46,6 @@ def download_data(cfg: HeartDataConfig, ctx: Context) -> None:
     dataset_zip = f'{kaggle_dataset_name}.zip'
     kaggle_download_command = f'kaggle datasets download -d fedesoriano/{kaggle_dataset_name}'
 
-    # TODO: add to readme to set kaggle credentials
     print('Downloading dataset from kaggle...')
     print(kaggle_download_command)
     ctx.run(kaggle_download_command)
@@ -58,7 +57,7 @@ def download_data(cfg: HeartDataConfig, ctx: Context) -> None:
     Path(dataset_zip).unlink()
 
 
-def read_data(csv_path: str) -> Tuple[pd.DataFrame, pd.Series]:
+def _read_data(csv_path: str) -> Tuple[pd.DataFrame, pd.Series]:
     data = pd.read_csv(PROJECT_ROOT / csv_path)
     data = data[(data['Cholesterol'] > 0) & (data['RestingBP'] > 0)]
     features = data.drop(['HeartDisease'], axis=1)
@@ -66,7 +65,7 @@ def read_data(csv_path: str) -> Tuple[pd.DataFrame, pd.Series]:
     return features, target
 
 
-def split_data(
+def _split_data(
     features: pd.DataFrame,
     target: pd.Series,
     test_ratio: float,
@@ -80,8 +79,8 @@ def preprocess(cfg: HeartDataConfig) -> None:
     print(f'Initiating dataset preprocessing using the following config: {cfg}')
     lightning.seed_everything(cfg.seed)
 
-    features, target = read_data(cfg.input_path)
-    preprocessed_data = split_data(features, target, cfg.test_ratio, cfg.seed)
+    features, target = _read_data(cfg.input_path)
+    preprocessed_data = _split_data(features, target, cfg.test_ratio, cfg.seed)
     preprocessed_data.to_csv(cfg.output_dir)
 
     print(f'Dataset is preprocessed and saved to {cfg.output_dir}')
