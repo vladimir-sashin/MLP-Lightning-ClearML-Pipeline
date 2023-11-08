@@ -23,10 +23,10 @@ class HeartSubset:
             raise ValueError(f'`subset_type` must be either `train` or `test`, got `{self.subset_type}`')
 
     def to_csv(self, export_dir: Union[str, Path]) -> None:
-        export_dir = PROJECT_ROOT / Path(export_dir) / self.subset_type
-        export_dir.mkdir(parents=True, exist_ok=True)
-        self.features.to_csv(export_dir / 'features.csv', index=False)
-        self.target.to_csv(export_dir / 'target.csv', index=False)
+        export_path = PROJECT_ROOT / export_dir / self.subset_type
+        export_path.mkdir(parents=True, exist_ok=True)
+        self.features.to_csv(export_path / 'features.csv', index=False)
+        self.target.to_csv(export_path / 'target.csv', index=False)
 
 
 @dataclass
@@ -46,7 +46,6 @@ def download_data(cfg: HeartDataConfig, ctx: Context) -> None:
     dataset_zip = f'{kaggle_dataset_name}.zip'
     kaggle_download_command = f'kaggle datasets download -d fedesoriano/{kaggle_dataset_name}'
 
-    # TODO: add to readme to set kaggle credentials
     print('Downloading dataset from kaggle...')
     print(kaggle_download_command)
     ctx.run(kaggle_download_command)
