@@ -1,12 +1,14 @@
 import os
+from pathlib import Path
 from sys import platform
-from typing import Optional
+from typing import Optional, Union
 
 from invoke import Context, task
 
-from src.config import get_heart_data_config
-from src.constants import HEART_NOTEBOOKS, PROJECT_ROOT
-from src.preprocess_heart import download_data, preprocess
+from src import heart_data
+from src.config import get_data_cfg
+from src.constants import HEART_NOTEBOOKS, MLP_HEART_DATA_CFG_PATH, PROJECT_ROOT
+from src.preprocessing import preprocess_data
 
 
 @task
@@ -31,24 +33,29 @@ def jupyter_start(ctx: Context, notebook: Optional[str] = None) -> None:
 
 
 @task
-def heart_download(ctx: Context) -> None:
-    cfg = get_heart_data_config()
-    download_data(cfg, ctx)
-
-
-@task
-def heart_preprocess(ctx: Context) -> None:
-    cfg = get_heart_data_config()
-    preprocess(cfg)
-
-
-@task
-def heart_data_pipe(ctx: Context) -> None:
-    heart_download(ctx)
-    heart_preprocess(ctx)
-
-
-@task
 def jupyter_heart_review(ctx: Context) -> None:
     notebook_path = HEART_NOTEBOOKS / 'heart_data_review.ipynb'
     jupyter_start(ctx, notebook=notebook_path)
+
+
+@task
+def download_heart(ctx: Context, data_cfg: Union[str, Path]) -> None:
+    cfg = get_data_cfg(data_cfg)
+    heart_data.download(ctx, cfg)
+
+
+@task
+def preprocess(ctx: Context, data_cfg: Union[str, Path]) -> None:
+    cfg = get_data_cfg(data_cfg)
+    preprocess_data(cfg)
+
+
+@task
+def data_pipeline_heart(ctx: Context, data_cfg: Union[str, Path]) -> None:
+    download_heart(ctx, data_cfg)
+    preprocess(ctx, data_cfg)
+
+
+@task
+def data_pipeline_heart_mlp(ctx: Context) -> None:
+    data_pipeline_heart(ctx, MLP_HEART_DATA_CFG_PATH)

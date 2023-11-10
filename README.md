@@ -30,18 +30,67 @@
    ```bash
    poetry run pre-commit install
    ```
+1. Activate poetry virtual environment
+   ```bash
+   poetry shell
+   ```
 1. Follow [instructions](https://www.kaggle.com/docs/api#authentication) to setup kaggle credentials to download initial dataset.
 1. \[Optional\] Follow [instructions](https://docs.pyinvoke.org/en/1.0/invoke.html#shell-tab-completion) to configure Invoke commands tab completion.
 
-## Main workflow
+# Main workflow
 
-1. Download and preprocess data:
+## Simple
+
+### MLP training
+
+1. **Heart Disease dataset preprocessing pipeline for MLP training**. Download Heart Disease dataset and preprocess it using `configs/mlp_heart_data_config.yaml` config:
+
+   1. Filter rows with non-positive values in selected columns that must be positive.
+   1. Tran/val/test split
+   1. Apply standardization to numeric variables
+   1. Apply one-hot encoding to categorical variables
+
    ```bash
-   invoke heart_data_pipe
+    invoke data_pipeline_heart_mlp
    ```
-1. Run notebook to review the data:
+
+1. Run notebook to briefly review the data:
+
    ```bash
    invoke jupyter_heart_review
+   ```
+
+## Full control
+
+### Manually specify config path
+
+1. Create or select a data config (must be valid, check `src/config.py`)
+1. Set path to data config in the terminal, for example:
+   - `bash`:
+     ```bash
+     cfg=configs/mlp_heart_data_config.yaml
+     ```
+   - `Windows PowerShell`:
+     ```bash
+     $cfg=configs\mlp_heart_data_config.yaml
+     ```
+1. Run Heart Disease dataset preprocessing pipeline:
+   ```bash
+   invoke data_pipeline_heart --data-cfg=$cfg
+   ```
+
+### Run pipeline stages separately
+
+1. Download Heart Disease dataset:
+
+   ```bash
+   invoke download_heart --data-cfg=$cfg
+   ```
+
+1. Preprocess data:
+
+   ```bash
+   invoke preprocess --data-cfg=$cfg
    ```
 
 ## Development

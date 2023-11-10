@@ -1,16 +1,15 @@
-import os
 from pathlib import Path
-from typing import Type, TypeVar, Union
+from typing import NamedTuple, Optional, Tuple, Type, TypeVar, Union
 
 from omegaconf import OmegaConf
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from src.constants import DEFAULT_HEART_DATA_CFG_PATH
+from src.constants import DEFAULT_DATA_CFG_PATH
 
 T = TypeVar('T', bound='_BaseValidatedConfig')
 
 
-class _BaseValidatedConfig(BaseModel):  # type: ignore
+class _BaseValidatedConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')  # Disallow unexpected arguments.
 
     @classmethod
@@ -19,20 +18,35 @@ class _BaseValidatedConfig(BaseModel):  # type: ignore
         return cls(**cfg)
 
 
-class HeartDataConfig(_BaseValidatedConfig):
+class SplitRatios(NamedTuple):
+    train: float
+    val: float
+    test: float
+
+
+class DataConfig(_BaseValidatedConfig):
     dataset_name: str
-    input_path: str
-    output_dir: str
+    raw_csv_path: str
+    processed_path: str
     seed: int
-    test_ratio: float
+    split_ratios: SplitRatios = SplitRatios(0.7, 0.15, 0.15)
+    target_column: str
+    categorical_columns: Optional[
+        Tuple[str, ...]
+    ] = None  # all other columns except target will be treated as numerical
+    positive_columns: Optional[Tuple[str, ...]] = None  # values <= 0 will be filtered out
+    apply_standardization: bool
 
     @model_validator(mode='after')
-    def test_ratio_leq_one(self) -> 'HeartDataConfig':
-        if self.test_ratio > 0.5:
-            raise ValueError(f'Test set ratio should be less than or equal to 0.5, got {self.test_ratio}')
+    def splits_add_up_to_one(self) -> 'DataConfig':
+        epsilon = 1e-5
+        total = sum(self.split_ratios)
+        if abs(total - 1) > epsilon:
+            raise ValueError(f'Splits should add up to 1, got {total}.')
         return self
 
 
-def get_heart_data_config() -> HeartDataConfig:
-    cfg_path = os.getenv('HEART_DATA_CFG_PATH', DEFAULT_HEART_DATA_CFG_PATH)
-    return HeartDataConfig.from_yaml(cfg_path)
+def get_data_cfg(cfg_path: Optional[Union[str, Path]] = None) -> DataConfig:
+    if not cfg_path:
+        return DataConfig.from_yaml(DEFAULT_DATA_CFG_PATH)
+    return DataConfig.from_yaml(cfg_path)

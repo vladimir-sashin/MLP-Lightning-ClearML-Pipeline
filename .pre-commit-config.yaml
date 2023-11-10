@@ -35,7 +35,7 @@ repos:
     rev: v1.5.1
     hooks:
       - id: mypy
-        args: ["--ignore-missing-imports", "--follow-imports=skip", "--strict", "--allow-untyped-decorators"]
+        args: ["--ignore-missing-imports", "--follow-imports=skip", "--strict", "--allow-untyped-decorators", "--allow-subclassing-any"]
   - repo: https://github.com/asottile/add-trailing-comma
     rev: v2.5.1
     hooks:

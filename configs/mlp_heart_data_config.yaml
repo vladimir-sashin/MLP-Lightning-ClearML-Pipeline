@@ -1,0 +1,20 @@
+dataset_name: heart_disease_dataset_mlp
+raw_csv_path: .datasets/heart_disease/initial/heart.csv
+processed_path: .datasets/heart_disease/processed_mlp
+seed: 42
+split_ratios:
+  - 0.70
+  - 0.15
+  - 0.15
+target_column: HeartDisease
+categorical_columns:
+  - Sex
+  - ChestPainType
+  - FastingBS
+  - RestingECG
+  - ExerciseAngina
+  - ST_Slope
+positive_columns:
+  - Cholesterol
+  - RestingBP
+apply_standardization: true
