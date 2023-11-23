@@ -19,6 +19,14 @@ class TabularDataset(Dataset):
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
         return self.data[idx]
 
+    @property
+    def num_classes(self) -> int:
+        return len(self.data.target.unique())
+
+    @property
+    def num_features(self) -> int:
+        return len(self.data.features.columns)
+
 
 @dataclass(frozen=True)
 class TabularSplit:
@@ -50,8 +58,10 @@ class TabularSplit:
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
         return (
-            torch.tensor(self._features.iloc[idx], dtype=torch.float16),
-            torch.tensor(self._target.iloc[idx], dtype=torch.uint8),
+            # .to_numpy() is needed to avoid spamming of FutureWarnings, because torch.tensor() calls
+            # Series.__getitem__(pos) which is deprecated by pandas
+            torch.tensor(self._features.iloc[idx].to_numpy(), dtype=torch.float32),
+            torch.tensor(self._target.iloc[idx], dtype=torch.int64),
         )
 
     def to_csv(self, export_dir: Union[str, Path]) -> None:

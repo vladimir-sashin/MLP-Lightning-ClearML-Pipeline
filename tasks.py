@@ -5,9 +5,10 @@ from typing import Optional, Union
 
 from invoke import Context, task
 
-from src import heart_data
-from src.config import get_data_cfg
-from src.constants import HEART_NOTEBOOKS, MLP_HEART_DATA_CFG_PATH, PROJECT_ROOT
+from src import heart_data, train
+from src.config import get_experiment_cfg
+from src.constants import HEART_NOTEBOOKS, MLP_CFG_PATH, PROJECT_ROOT
+from src.datamodule import dm_prepare_data
 from src.preprocessing import preprocess_data
 
 
@@ -39,23 +40,24 @@ def jupyter_heart_review(ctx: Context) -> None:
 
 
 @task
-def download_heart(ctx: Context, data_cfg: Union[str, Path]) -> None:
-    cfg = get_data_cfg(data_cfg)
-    heart_data.download(ctx, cfg)
+def download_heart(ctx: Context, cfg: Optional[Union[str, Path]] = None) -> None:
+    data_cfg = get_experiment_cfg(cfg).data_config
+    heart_data.download(ctx, data_cfg)
 
 
 @task
-def preprocess(ctx: Context, data_cfg: Union[str, Path]) -> None:
-    cfg = get_data_cfg(data_cfg)
-    preprocess_data(cfg)
+def preprocess(ctx: Context, cfg: Optional[Union[str, Path]] = None) -> None:
+    exp_cfg = get_experiment_cfg(cfg)
+    preprocess_data(exp_cfg.data_config, seed=exp_cfg.seed)
 
 
 @task
-def data_pipeline_heart(ctx: Context, data_cfg: Union[str, Path]) -> None:
-    download_heart(ctx, data_cfg)
-    preprocess(ctx, data_cfg)
+def get_data_mlp(ctx: Context, cfg: Union[str, Path] = MLP_CFG_PATH) -> None:
+    exp_cfg = get_experiment_cfg(cfg)
+    dm_prepare_data(exp_cfg.data_config, exp_cfg.seed)
 
 
 @task
-def data_pipeline_heart_mlp(ctx: Context) -> None:
-    data_pipeline_heart(ctx, MLP_HEART_DATA_CFG_PATH)
+def train_mlp(ctx: Context, cfg: Optional[Union[str, Path]] = MLP_CFG_PATH) -> None:
+    exp_cfg = get_experiment_cfg(cfg)
+    train.train_mlp(exp_cfg)

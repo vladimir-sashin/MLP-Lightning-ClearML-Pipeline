@@ -38,14 +38,12 @@ def _split_data(
     features: pd.DataFrame,
     target: pd.Series,
     split_ratios: SplitRatios,
-    seed: int,
 ) -> TabularSplitsCollection:
     x_train, x_val_test, y_train, y_val_test = train_test_split(
         features,
         target,
         stratify=target,
         test_size=(1 - split_ratios.train),
-        random_state=seed,
     )
 
     relative_test_ratio = split_ratios.test / (split_ratios.val + split_ratios.test)
@@ -54,7 +52,6 @@ def _split_data(
         y_val_test,
         stratify=y_val_test,
         test_size=relative_test_ratio,
-        random_state=seed,
     )
 
     train_split = TabularSplit(x_train, y_train, 'train')
@@ -74,7 +71,7 @@ def _fit_col_transformer(
     if categorical_cols:
         transformers.append(('cat', OneHotEncoder(handle_unknown='ignore'), categorical_cols))
 
-        numeric_cols = tuple(set(features.columns) - set(categorical_cols))
+        numeric_cols = tuple([col for col in features.columns if col not in categorical_cols])
     else:
         numeric_cols = tuple(features.columns)
 
@@ -125,13 +122,20 @@ def _transform_cols(transformer: ColumnTransformer, splits: TabularSplitsCollect
     )
 
 
-def preprocess_data(cfg: DataConfig) -> None:
+def preprocess_data(cfg: DataConfig, seed: Optional[int] = None) -> None:
+    """Preprocess a CSV dataset using DataConfig
+
+    Args:
+        cfg: DataConfig that describes all paths and transformations
+        seed: If passed, sets random seed. If not passed, make sure to set seed before to get reproducible results
+    """
     print(f'Initiating dataset preprocessing using the following config: {cfg}')
-    lightning.seed_everything(cfg.seed)
+    if seed is not None:
+        lightning.seed_everything(seed)
 
     features, target = _read_data(cfg.raw_csv_path, cfg.target_column)
     features, target = _filter_positive_cols(features, target, cfg.positive_columns)
-    splits = _split_data(features, target, cfg.split_ratios, cfg.seed)
+    splits = _split_data(features, target, cfg.split_ratios)
 
     transformer = _fit_col_transformer(splits.train.features, cfg.categorical_columns, cfg.apply_standardization)
     splits = _transform_cols(transformer, splits)
