@@ -37,7 +37,7 @@ ipyplot = "^1.0"
 [tool.vulture]
 min_confidence = 80
 paths = ["src"]
-ignore_names = ["args", "kwargs"]
+ignore_names = ["args", "kwargs", "batch_idx"]
 sort_by_size = true
 verbose = false
 

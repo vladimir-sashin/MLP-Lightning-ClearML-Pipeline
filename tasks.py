@@ -1,12 +1,15 @@
 import os
+from pathlib import Path
 from sys import platform
-from typing import Optional
+from typing import Optional, Union
 
 from invoke import Context, task
 
-from src.config import get_heart_data_config
-from src.constants import HEART_NOTEBOOKS, PROJECT_ROOT
-from src.preprocess_heart import download_data, preprocess
+from src import heart_data, train
+from src.config import get_experiment_cfg
+from src.constants import HEART_NOTEBOOKS, MLP_CFG_PATH, PROJECT_ROOT
+from src.datamodule import dm_prepare_data
+from src.preprocessing import preprocess_data
 
 
 @task
@@ -31,24 +34,30 @@ def jupyter_start(ctx: Context, notebook: Optional[str] = None) -> None:
 
 
 @task
-def heart_download(ctx: Context) -> None:
-    cfg = get_heart_data_config()
-    download_data(cfg, ctx)
-
-
-@task
-def heart_preprocess(ctx: Context) -> None:
-    cfg = get_heart_data_config()
-    preprocess(cfg)
-
-
-@task
-def heart_data_pipe(ctx: Context) -> None:
-    heart_download(ctx)
-    heart_preprocess(ctx)
-
-
-@task
 def jupyter_heart_review(ctx: Context) -> None:
     notebook_path = HEART_NOTEBOOKS / 'heart_data_review.ipynb'
     jupyter_start(ctx, notebook=notebook_path)
+
+
+@task
+def download_heart(ctx: Context, cfg: Optional[Union[str, Path]] = None) -> None:
+    data_cfg = get_experiment_cfg(cfg).data_config
+    heart_data.download(ctx, data_cfg)
+
+
+@task
+def preprocess(ctx: Context, cfg: Optional[Union[str, Path]] = None) -> None:
+    exp_cfg = get_experiment_cfg(cfg)
+    preprocess_data(exp_cfg.data_config, seed=exp_cfg.seed)
+
+
+@task
+def get_data_mlp(ctx: Context, cfg: Union[str, Path] = MLP_CFG_PATH) -> None:
+    exp_cfg = get_experiment_cfg(cfg)
+    dm_prepare_data(exp_cfg.data_config, exp_cfg.seed)
+
+
+@task
+def train_mlp(ctx: Context, cfg: Optional[Union[str, Path]] = MLP_CFG_PATH) -> None:
+    exp_cfg = get_experiment_cfg(cfg)
+    train.train_mlp(exp_cfg)
