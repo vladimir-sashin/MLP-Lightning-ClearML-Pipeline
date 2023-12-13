@@ -7,8 +7,8 @@ from torch import Tensor
 from torchmetrics import MeanMetric
 
 from src.config import MLPExperimentConfig
-from src.metrics import get_metrics
-from src.model import get_mlp_model
+from src.train.metrics import get_metrics
+from src.train.model import get_mlp_model
 
 
 class ClassificationLightningModule(LightningModule):
@@ -30,7 +30,7 @@ class ClassificationLightningModule(LightningModule):
         self._test_metrics = metrics.clone(prefix='test_')
 
         self.model = get_mlp_model(
-            mlp_cfg=cfg.mlp_config,
+            mlp_cfg=cfg.mlp_model_config,
             in_dim=in_features,
             out_dim=num_classes,
         )

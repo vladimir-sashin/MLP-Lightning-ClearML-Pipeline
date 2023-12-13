@@ -13,3 +13,4 @@ __pycache__
 lightning_logs
 *.pth
 datasets
+data_tmp

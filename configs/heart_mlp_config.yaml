@@ -1,34 +1,37 @@
 seed: 42
+project_name: Heart Disease Classification
+experiment_name: Baseline MLP Training
+run_mode: pipeline
+track_in_clearml: true
 data_config:
-  dataset_name: heart_disease_dataset_mlp
-  force_download: false
-  force_preprocess: false
-  raw_csv_path: datasets/heart_disease/initial/heart.csv
-  processed_path: datasets/heart_disease/processed_mlp
-  split_ratios:
-    - 0.70
-    - 0.15
-    - 0.15
-  target_column: HeartDisease
-  categorical_columns:
-    - Sex
-    - ChestPainType
-    - FastingBS
-    - RestingECG
-    - ExerciseAngina
-    - ST_Slope
-  positive_columns:
-    - Cholesterol
-    - RestingBP
-  apply_standardization: true
-  dataloader_config:
-    batch_size: 64
-    num_workers: 0
-    pin_memory: True
+  orig_dataset_name: Heart Disease
+  dataset_description: Heart Disease dataset https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction
+  raw_csv_url: https://drive.google.com/u/0/uc?id=1zm4NnDrVhIKH9-fatlD5idECalFyWK0y&export=download
+  processing_config:
+    split_ratios:
+      - 0.70
+      - 0.15
+      - 0.15
+    target_column: HeartDisease
+    categorical_columns:
+      - Sex
+      - ChestPainType
+      - FastingBS
+      - RestingECG
+      - ExerciseAngina
+      - ST_Slope
+    positive_columns:
+      - Cholesterol
+      - RestingBP
+    apply_standardization: true
+dataloader_config:
+  batch_size: 64
+  num_workers: 0
+  pin_memory: True
 trainer_config:
   fast_dev_run: false # sanity check if True
   min_epochs: 1
-  max_epochs: 50
+  max_epochs: 3
   check_val_every_n_epoch: 1
   log_every_n_steps: 3
   gradient_clip_val: null
@@ -36,7 +39,7 @@ trainer_config:
   deterministic: true
   default_root_dir: null
   detect_anomaly: false
-mlp_config:
+mlp_model_config:
   linear_1_dim: 1000
   linear_2_dim: 1000
 hyperparameters_config:

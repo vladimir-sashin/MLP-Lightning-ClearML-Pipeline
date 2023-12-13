@@ -2,133 +2,126 @@
 
 ## Getting started
 
-1. Follow [instructions](https://github.com/python-poetry/install.python-poetry.org) to install Poetry.
-1. Check that poetry was installed successfully:
+1. Follow [instructions](https://github.com/python-poetry/install.python-poetry.org) to install Poetry. Check that poetry was installed successfully:
    ```bash
    poetry --version
    ```
-1. Choose Python 3.10 interpreter for poetry:
+1. Setup workspace.
    - Unix:
-     ```bash
-     poetry env use python3.10
-     ```
+   ```bash
+   make setup_ws
+   ```
    - Windows:
-     ```bash
-     # Because poetry fails on `poetry env use pythonX.Y` command on Windows
-     # https://github.com/python-poetry/poetry/issues/2117
-     poetry env use <your_python_3.10_executable>
-     ```
-1. Install dependencies:
    ```bash
-   poetry install --with notebooks
-   ```
-1. Path to the poetry virtual env:
-   ```bash
-   poetry env info -p
-   ```
-1. Install pre-commit:
-   ```bash
-   poetry run pre-commit install
+   make setup_ws <path_to_your_python_3.10_executable>
    ```
 1. Activate poetry virtual environment
    ```bash
    poetry shell
    ```
-1. Follow [instructions](https://www.kaggle.com/docs/api#authentication) to setup kaggle credentials to download initial dataset.
-1. \[Optional\] Follow [instructions](https://docs.pyinvoke.org/en/1.0/invoke.html#shell-tab-completion) to configure Invoke commands tab completion.
+1. Init ClearML, [follow instructions](https://clear.ml/docs/latest/docs/getting_started/ds/ds_first_steps/)
+   ```bash
+   clearml-init
+   ```
 
 ______________________________________________________________________
 
-# Main workflow
+# Model training
 
-## Train MLP on [Heart Disease diagnosis dataset](https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction)
+1. **\[Only if running in ClearML pipeline mode\]** Initialize tasks in ClearML (details are in the `CLEARML INIT TASKS` section of [Makefile](Makefile)).
+   ```bash
+   make clearml_init_tasks
+   ```
+1. Run the pipeline
+   ```bash
+   make run_training
+   ```
 
-```bash
-invoke train_mlp
-```
+### Execution modes
 
-Without arguments this command will use experiment config `configs/heart_mlp_config.yaml`.
+There are 3 modes in which training can be executed, controlling the degree of tracking and versioning of experiments and artifacts.
 
-The command above will execute the whole pipeline:
+1. ClearML pipeline (`run_mode: pipeline`)
+1. Local (simple) mode (`run_mode: local`):
+   - ClearML experiment tracking **enabled** (`track_in_clearml: true`)
+   - ClearML experiment tracking **disabled** (`track_in_clearml: false`)
 
-1. Download data
+As well as all configurations, mode is selected in the config file.
+
+### Configuration:
+
+Both pre-processing and model training are configured in a single `.yaml` file, check [src/config.py](src/config.py) and [configs/heart_mlp_config.yaml](configs/heart_mlp_config.yaml) (used by default). You can provide an absolute path to the config in the `TRAIN_MLP_CFG_PATH` environment variable.
+
+### Training pipeline (same for all mods):
+
+1. Download initial raw data
 1. Preprocess data
-1. Train MLP
+1. Train the model
 
-**Preprocessing steps:**
+<details>
+  <summary>Preprocessing step details</summary>
 
 1. Filter rows with non-positive values in selected columns that must be positive.
 1. Tran/val/test split
 1. Apply standardization to numeric variables
 1. Apply one-hot encoding to categorical variables
 
-### Specify path to experiment config
-
-Experiment config must strictly follow `src/config.py`'s `Pydantic` model.
-
-```bash
-invoke train_mlp --cfg=configs/<your_cfg_name>.yaml
-```
-
-### Check training logs
-
-All training logs are saved in `src/lightning_logs` directory and currently can be accessed using [TensorBoard](https://www.tensorflow.org/tensorboard/get_started#:~:text=TensorBoard%20is%20a%20tool%20for,dimensional%20space%2C%20and%20much%20more.). Although experiment tracking in [ClearML](https://clear.ml/docs/latest/docs/) will be configured soon.
+</details>
 
 ______________________________________________________________________
 
-## More control. Development and debugging utils
+## Training in ClearML pipeline mode details
 
-### Jupyter Notebooks
+![pipeline](assets/pipeline_diagram.png)
 
-#### Run Jupyter Lab
+When training is run in this mode, ClearML runs all pipeline steps as reproducible Tasks tracked in ClearML and chained with each other:
+
+1. Init data: downloads raw CSV dataset from the internet and uploads it to ClearML, creating an easily accessible and traceable dataset in ClearML.
+1. Preprocess data, upload it to ClearML and create a new preprocessed dataset version. In case of running experiments with different preprocessing configs, different versions will be created and connected with configs, Thus, all the data is tracked and versioned.
+1. Run model training experiment, metrics will be tracked and model artifacts will be registered in ClearML.
+
+Running ClearML pipeline ensures not only reproducibility, but also a full transparency of experiments by encapsulating, linking and tracking everything on each step: configuration, dataset versions, model artifacts, metrics, dependencies, `git` branch/commit and even uncommitted changes.
+
+Additionally, data preprocessing steps are cached, so when you run training experiment with the same configuration and task version, these steps will be skipped.
+
+![pipeline](assets/pipeline_screenshot.png)
+
+______________________________________________________________________
+
+## Training in local (simple) mode details
+
+In case of this mode, training pipeline is fully handled by Lightning, so it is also reproducible and self-sufficient, but provides less tracking and versioning.
+
+### 1. If ClearML tracking is enabled
+
+The experiment is tracked almost the same way as in case of ClearML pipeline, but with the following differences:
+
+1. Steps are not tracked and encapsulated by ClearML separately. Tracking starts with the first step and ends with the last. So there's 1 ClearML task per experiment, not 1 per each step, so steps cannot be reproduced separately by ClearML's task execution capabilities.
+1. Dataset versions are not created in ClearML as a result of data init and data prep steps.
+
+Thereby, this mode doesn't provide granular tracking of each step in ClearML and doesn't have data versioning, but still has experiment tracking enabled (config, logs, metrics and model artifacts, etc.).
+
+Training in this mode runs faster than in ClearML pipeline mode.
+
+### 2. If ClearML tracking is disabled
+
+The same as the previous mode, but without any integration with ClearML, pure Lightning, but still self-sufficient and reproducible, with default Lightning logging/tracking to TensorBoard enabled. The fastest method, perfect for local experimentation and debugging.
+
+______________________________________________________________________
+
+## Note about temporary data
+
+All the initially downloaded and pre-processed data is hierarchically structured and stored in the `data_tmp` directory for debugging and analysis purposes. **Keeping this data is NOT required for training in any mode**, because training is fully reproducible and self-sufficient thanks to ClearML and Lightning. So, the data from this directory can be safely removed at any time, the only recommendation is to keep the initial raw CSV file to avoid downloading every time in case of local training (file won't be downloaded if it already exists).
+
+______________________________________________________________________
+
+## Run Jupyter Lab
 
 Configured to enable using CTRL+B to jump to code definitions
 
 ```bash
-invoke jupyter_start
+make jupyterlab_start
 ```
-
-#### Briefly review raw (not pre-processed) dataset in the notebook
-
-```bash
-invoke jupyter_heart_review
-```
-
-### Run data processing and training steps separately
-
-`--cfg` argument to all commands below is optional, MLP Heart Dataset config is used by default.
-
-#### 1. Download Heart Disease dataset
-
-```bash
-   invoke download_heart --cfg=<path_to_your_cfg>
-```
-
-#### 2. Preprocess dataset
-
-In fact, this command is dataset agnostic.
-
-```bash
-   invoke preprocess --cfg=<path_to_your_cfg>
-```
-
-#### 3. Download + preprocess dataset as during MLP training
-
-You can use this command to test Lightning DataModule's `prepare_data()` method that runs downloading + pre-processing as during training.
-
-```bash
-   invoke get_data_mlp --cfg=<path_to_your_cfg>
-```
-
-______________________________________________________________________
-
-## Development notes
-
-### Invoke - CLI for scripts
-
-Invoke is used here for task/command management. It allows to run any scripts seamlessly via CLI, both main functionalities (like data prep or training) and utilities.  All CLI commands (Invoke `tasks`) are defined in `tasks.py`, so you can find all existing commands here.
-
-To make it easier to run main functionalities and utils, make sure to add a new `task` to `tasks.py` whenever you develop a new script or util.
 
 ______________________________________________________________________
 

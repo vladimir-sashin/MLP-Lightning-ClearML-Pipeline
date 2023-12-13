@@ -1,40 +1,26 @@
-from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
-import lightning
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from src.config import DataConfig, SplitRatios
-from src.constants import PROJECT_ROOT
-from src.dataset import TabularSplit
+from src.config import SplitRatios
+from src.data.data_model import TabularSplit
+from src.data.preprocessing.model import TabularSplitsCollection
 
 
-@dataclass(frozen=True)
-class TabularSplitsCollection:
-    train: TabularSplit
-    val: TabularSplit
-    test: TabularSplit
-
-    def to_csv(self, export_dir: Union[str, Path]) -> None:
-        self.train.to_csv(export_dir)
-        self.val.to_csv(export_dir)
-        self.test.to_csv(export_dir)
-
-
-def _read_data(csv_path: str, target_col: str) -> Tuple[pd.DataFrame, pd.Series]:
-    data = pd.read_csv(PROJECT_ROOT / csv_path)
+def read_data(csv_abs_path: Path, target_col: str) -> Tuple[pd.DataFrame, pd.Series]:
+    data = pd.read_csv(csv_abs_path)
     features = data.drop([target_col], axis=1)
     target = data[target_col]
     return features, target
 
 
-def _split_data(
+def split_data(
     features: pd.DataFrame,
     target: pd.Series,
     split_ratios: SplitRatios,
@@ -61,7 +47,7 @@ def _split_data(
     return TabularSplitsCollection(train_split, val_split, test_split)
 
 
-def _fit_col_transformer(
+def fit_col_transformer(
     features: pd.DataFrame,
     categorical_cols: Optional[Tuple[str, ...]] = None,
     apply_standardization: bool = False,
@@ -84,7 +70,7 @@ def _fit_col_transformer(
     return transformer
 
 
-def _filter_positive_cols(
+def filter_positive_cols(
     features: pd.DataFrame,
     target: pd.Series,
     positive_cols: Optional[Tuple[str, ...]] = None,
@@ -103,7 +89,7 @@ def _np_to_df(features_np: np.ndarray, col_names: np.ndarray) -> pd.DataFrame:
     return pd.DataFrame(features_np, columns=col_names)
 
 
-def _transform_cols(transformer: ColumnTransformer, splits: TabularSplitsCollection) -> TabularSplitsCollection:
+def transform_cols(transformer: ColumnTransformer, splits: TabularSplitsCollection) -> TabularSplitsCollection:
     train_features_np = transformer.transform(splits.train.features)
     val_features_np = transformer.transform(splits.val.features)
     test_features_np = transformer.transform(splits.test.features)
@@ -120,26 +106,3 @@ def _transform_cols(transformer: ColumnTransformer, splits: TabularSplitsCollect
         val=TabularSplit(val_features, splits.val.target, 'val'),
         test=TabularSplit(test_features, splits.test.target, 'test'),
     )
-
-
-def preprocess_data(cfg: DataConfig, seed: Optional[int] = None) -> None:
-    """Preprocess a CSV dataset using DataConfig
-
-    Args:
-        cfg: DataConfig that describes all paths and transformations
-        seed: If passed, sets random seed. If not passed, make sure to set seed before to get reproducible results
-    """
-    print(f'Initiating dataset preprocessing using the following config: {cfg}')
-    if seed is not None:
-        lightning.seed_everything(seed)
-
-    features, target = _read_data(cfg.raw_csv_path, cfg.target_column)
-    features, target = _filter_positive_cols(features, target, cfg.positive_columns)
-    splits = _split_data(features, target, cfg.split_ratios)
-
-    transformer = _fit_col_transformer(splits.train.features, cfg.categorical_columns, cfg.apply_standardization)
-    splits = _transform_cols(transformer, splits)
-
-    splits.to_csv(cfg.processed_path)
-
-    print(f'Dataset is preprocessed and saved to {cfg.processed_path}')
