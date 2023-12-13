@@ -1,5 +1,9 @@
 # Topological XAI research
 
+<a href="https://www.pytorchlightning.ai/index.html"><img alt="PytorchLightning" src="https://img.shields.io/badge/PytorchLightning-7930e3?logo=lightning&style=flat"></a>
+<a href="https://clear.ml/docs/latest/"><img alt="ClearML" src="https://img.shields.io/badge/MLOps-Clear%7CML-%2309173c"></a>
+![example workflow](https://github.com/vladimir-sashin/topological_XAI/actions/workflows/ci.yml/badge.svg)
+
 ## Getting started
 
 1. Follow [instructions](https://github.com/python-poetry/install.python-poetry.org) to install Poetry. Check that poetry was installed successfully:
