@@ -1,3 +1,5 @@
+import os
+from enum import Enum
 from pathlib import Path
 from typing import Literal, NamedTuple, Optional, Tuple, Type, TypeVar, Union
 
@@ -11,7 +13,7 @@ T = TypeVar('T', bound='_BaseValidatedConfig')
 
 
 class _BaseValidatedConfig(BaseModel):
-    model_config = ConfigDict(extra='forbid')  # Disallow unexpected arguments.
+    model_config = ConfigDict(extra='forbid', validate_assignment=True)  # Disallow unexpected arguments.
 
 
 class _ConfigYamlMixin(BaseModel):
@@ -37,13 +39,7 @@ class DataLoaderConfig(_BaseValidatedConfig):
     pin_memory: bool = True
 
 
-class DataConfig(_BaseValidatedConfig):
-    dataset_name: str = 'heart_disease_dataset_mlp'
-    # If False: don't download data if it's already present in the raw_csv_path. If True: download and replace anyway
-    force_download: bool = False
-    force_preprocess: bool = False
-    raw_csv_path: str = 'datasets/heart_disease/initial/heart.csv'
-    processed_path: str = 'datasets/heart_disease/processed_mlp'
+class ProcessingConfig(_BaseValidatedConfig):
     split_ratios: SplitRatios = SplitRatios(0.7, 0.15, 0.15)
     target_column: str = 'HeartDisease'
     categorical_columns: Optional[
@@ -51,15 +47,21 @@ class DataConfig(_BaseValidatedConfig):
     ] = None  # all other columns except target will be treated as numerical
     positive_columns: Optional[Tuple[str, ...]] = None  # values <= 0 will be filtered out
     apply_standardization: bool = True
-    dataloader_config: DataLoaderConfig = Field(default=DataLoaderConfig())
 
     @model_validator(mode='after')
-    def splits_add_up_to_one(self) -> 'DataConfig':
+    def splits_add_up_to_one(self) -> 'ProcessingConfig':
         epsilon = 1e-5
         total = sum(self.split_ratios)
         if abs(total - 1) > epsilon:
             raise ValueError(f'Splits should add up to 1, got {total}.')
         return self
+
+
+class DataConfig(_BaseValidatedConfig):
+    orig_dataset_name: str = 'heart_disease_dataset_mlp'
+    dataset_description: str = 'Heart Disease dataset'
+    raw_csv_url: str = 'https://drive.google.com/u/0/uc?id=1zm4NnDrVhIKH9-fatlD5idECalFyWK0y&export=download'
+    processing_config: ProcessingConfig = Field(default=ProcessingConfig())
 
 
 class MLPTrainerConfig(_BaseValidatedConfig):
@@ -93,15 +95,26 @@ class MLPHyperparametersConfig(_BaseValidatedConfig):
     lr: float = 2e-3
 
 
+class RunModeEnum(str, Enum):
+    pipeline = 'pipeline'
+    local = 'local'
+
+
 class MLPExperimentConfig(_BaseValidatedConfig, _ConfigYamlMixin):
+    project_name: str = 'mlp_classification'
     seed: int = 42
+    experiment_name: str = 'training'
+    track_in_clearml: bool = False
+    run_mode: RunModeEnum = RunModeEnum.pipeline
     data_config: DataConfig = Field(default=DataConfig())
+    dataloader_config: DataLoaderConfig = Field(default=DataLoaderConfig())
     trainer_config: MLPTrainerConfig = Field(default=MLPTrainerConfig())
-    mlp_config: MLPModelConfig = Field(default=MLPModelConfig())
+    mlp_model_config: MLPModelConfig = Field(default=MLPModelConfig())
     hyperparameters_config: MLPHyperparametersConfig = Field(default=MLPHyperparametersConfig())
 
 
 def get_experiment_cfg(cfg_path: Optional[Union[str, Path]] = None) -> MLPExperimentConfig:
+    cfg_path = cfg_path or os.getenv('TRAIN_MLP_CFG_PATH')
     if not cfg_path:
         return MLPExperimentConfig.from_yaml(MLP_CFG_PATH)
     return MLPExperimentConfig.from_yaml(cfg_path)

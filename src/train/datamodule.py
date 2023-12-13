@@ -1,26 +1,25 @@
 from pathlib import Path
 from typing import Optional
 
-import invoke
-from lightning import LightningDataModule, seed_everything
+from lightning import LightningDataModule
 from torch.utils.data import DataLoader
 
-from src import heart_data
-from src.config import DataConfig
-from src.constants import PROJECT_ROOT
-from src.dataset import TabularDataset
-from src.preprocessing import preprocess_data
+from src.clearml_pipeline.preprocess.task import get_prep_data
+from src.config import MLPExperimentConfig, RunModeEnum
+from src.data.preprocessing.main import download_csv, preprocess_data
+from src.train.dataset import TabularDataset
 
 
 class TabularDataModule(LightningDataModule):
     def __init__(
         self,
-        cfg: DataConfig,
+        cfg: MLPExperimentConfig,
     ):
         super().__init__()
+        self.project_name = cfg.project_name
         self.cfg = cfg
-
-        self.data_path: Path = PROJECT_ROOT / self.cfg.processed_path
+        self.data_cfg = cfg.data_config
+        self.prep_cfg = cfg.data_config.processing_config
 
         self.batch_size = cfg.dataloader_config.batch_size
         self.num_workers = cfg.dataloader_config.num_workers
@@ -55,20 +54,27 @@ class TabularDataModule(LightningDataModule):
     def prepare_data(self) -> None:
         if self.is_data_prepared:
             return
-        # TODO: parametrize data downloading to enable training on custom datasets, not only Heart Disease Dataset
-        heart_data.download(invoke.Context(), self.cfg)
-        preprocess_data(self.cfg)
+
+        # Since we don't do distributed training, we can safely assign state here
+        self.data_path = self._prepare_data()
 
         self.is_data_prepared = True
 
+    def _prepare_data(self) -> Path:
+        if self.cfg.run_mode == RunModeEnum.pipeline:
+            return get_prep_data(self.cfg)
+        elif self.cfg.run_mode == RunModeEnum.local:
+            raw_csv_path = download_csv(self.project_name, self.data_cfg, skip_if_exists=True)
+            return preprocess_data(self.project_name, self.data_cfg, raw_csv_path, seed=self.cfg.seed)
+
     def setup(self, stage: str) -> None:
         if stage == 'fit' and not self.is_fit_set_up:
-            self.data_train = TabularDataset(self.data_path, 'train', self.cfg.target_column)
-            self.data_val = TabularDataset(self.data_path, 'val', self.cfg.target_column)
+            self.data_train = TabularDataset(self.data_path, 'train', self.prep_cfg.target_column)
+            self.data_val = TabularDataset(self.data_path, 'val', self.prep_cfg.target_column)
             self.is_fit_set_up = True
 
         elif stage == 'test' and not self.is_test_set_up:
-            self.data_test = TabularDataset(self.data_path, 'test', self.cfg.target_column)
+            self.data_test = TabularDataset(self.data_path, 'test', self.prep_cfg.target_column)
             self.is_test_set_up = True
 
     def train_dataloader(self) -> DataLoader:
@@ -99,7 +105,6 @@ class TabularDataModule(LightningDataModule):
         )
 
 
-def dm_prepare_data(cfg: DataConfig, seed: int) -> None:
-    seed_everything(seed)
+def dm_prepare_data(cfg: MLPExperimentConfig) -> None:
     datamodule = TabularDataModule(cfg)
     datamodule.prepare_data()
