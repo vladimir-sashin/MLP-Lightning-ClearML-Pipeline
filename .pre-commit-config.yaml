@@ -2,15 +2,15 @@ default_language_version:
   python: python3.10
 repos:
   - repo: https://github.com/pycqa/flake8
-    rev: 6.1.0
+    rev: 7.1.1
     hooks:
       - id: flake8
   - repo: https://github.com/jendrikseipp/vulture
-    rev: v2.7
+    rev: v2.11
     hooks:
       - id: vulture
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.6.0
     hooks:
       - id: check-added-large-files
         args: ['--maxkb=4096']
@@ -22,31 +22,31 @@ repos:
       - id: trailing-whitespace
       - id: double-quote-string-fixer
   - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+    rev: 5.13.2
     hooks:
       - id: isort
         args: ["--profile=black", "--line-length=120"]
   - repo: https://github.com/psf/black
-    rev: 23.1.0
+    rev: 24.8.0
     hooks:
       - id: black
         args: ["--skip-string-normalization", "--line-length=120"]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.5.1
+    rev: v1.11.1
     hooks:
       - id: mypy
         args: ["--ignore-missing-imports", "--follow-imports=skip", "--strict", "--allow-untyped-decorators", "--allow-subclassing-any"]
         additional_dependencies: ["types-PyYAML"]
   - repo: https://github.com/asottile/add-trailing-comma
-    rev: v2.5.1
+    rev: v3.1.0
     hooks:
       - id: add-trailing-comma
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.16
+    rev: 0.7.17
     hooks:
       - id: mdformat
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.7.0
+    rev: 1.8.7
     hooks:
       - id: nbqa-flake8
         additional_dependencies: [ flake8==6.1.0 ]
