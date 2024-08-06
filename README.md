@@ -6,7 +6,6 @@
 
 This repo is capable of running tabular data preprocessing and training of a simple MLP using PyTorch Lightning and ClearML, featuring experiment tracking, data and model versioning, and CI. This repo showcases the usage of [ClearML Pipeline](https://clear.ml/docs/latest/docs/pipelines/).
 
-
 ## Getting started
 
 1. Follow [instructions](https://github.com/python-poetry/install.python-poetry.org) to install Poetry. Check that poetry was installed successfully:
