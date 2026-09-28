@@ -42,9 +42,9 @@ class DataLoaderConfig(_BaseValidatedConfig):
 class ProcessingConfig(_BaseValidatedConfig):
     split_ratios: SplitRatios = SplitRatios(0.7, 0.15, 0.15)
     target_column: str = 'HeartDisease'
-    categorical_columns: Optional[
-        Tuple[str, ...]
-    ] = None  # all other columns except target will be treated as numerical
+    categorical_columns: Optional[Tuple[str, ...]] = (
+        None  # all other columns except target will be treated as numerical
+    )
     positive_columns: Optional[Tuple[str, ...]] = None  # values <= 0 will be filtered out
     apply_standardization: bool = True
 
