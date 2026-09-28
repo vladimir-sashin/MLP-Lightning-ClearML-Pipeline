@@ -34,7 +34,7 @@ ______________________________________________________________________
 
 # Model training
 
-1. **\[Only if running in ClearML pipeline mode\]** Initialize tasks in ClearML (details are in the `CLEARML INIT TASKS` section of [Makefile](Makefile)).
+1. **[Only if running in ClearML pipeline mode]** Initialize tasks in ClearML (details are in the `CLEARML INIT TASKS` section of [Makefile](Makefile)).
    ```bash
    make clearml_init_tasks
    ```
